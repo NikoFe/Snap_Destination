@@ -1,0 +1,4 @@
+https://console.firebase.google.com/project/snapdestination-e76e0/overview
+
+Project ID:
+snapdestination-e76e0
