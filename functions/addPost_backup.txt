@@ -1,0 +1,29 @@
+exports.addPost = onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: "Method Not Allowed. Use POST." });
+    return;
+  }
+  if (!req.auth) {
+    res.status(401).json({ error: "Unauthorized. You must be logged in to add a post." });
+    return;
+  }
+  const { title, content } = req.body;
+  const userId = req.auth.uid;
+  if (!title || !content) {
+    res.status(400).json({ error: "Missing title or content for the post in request body." });
+    return;
+  }
+  try {
+    const postRef = await getFirestore().collection("posts").add({
+      userId: userId, // Store the ID of the user who created the post
+      title: title,
+      content: content,
+      createdAt: new Date(), // Timestamp of post creation
+    });
+    logger.info(`Post added by user ${userId} with ID: ${postRef.id}`);
+    res.status(201).json({ result: `Post added successfully with ID: ${postRef.id}` });
+  } catch (error) {
+    logger.error(`Error adding post for user ${userId}:`, error);
+    res.status(500).json({ error: "Failed to add post", details: error.message });
+  }
+});

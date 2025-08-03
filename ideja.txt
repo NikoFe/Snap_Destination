@@ -1,0 +1,29 @@
+avtentikacija
+
+Objavljanje o tem kar si tisti dan jedel oz. kje si bil, samo prijateljem je to vidno in (Sporočila in obveščanje:) 
+
+ti podatki se čez čas zbrišejo (že  naslendji dan) (timed event)
+
+login in prijava kot uporabniški dogodki
+
+Prijatelji dobijo notifikacije o tem, da si nekaj objavil. 
+
+https://github.com/HlisTilen/ITA/tree/main/01_vaja
+
+//// TO DO
+
+upload post with image 2. Shramba in datoteke (onFileUpload)
+
+register 
+
+login with authentication
+
+prevent access without login authentication
+
+on post  notify other friends 3. Sporočila in obveščanje:
+
+add friends
+
+automatic delete timer 4. Časovni dogodki:
+
+

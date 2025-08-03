@@ -1,0 +1,12 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      // Allow read/write for everyone during development (be cautious in production)
+      allow read, write: if true;
+
+      // Or, for more controlled access (recommended for closer to production):
+      // allow read, write: if request.auth != null; // Only authenticated users
+    }
+  }
+}

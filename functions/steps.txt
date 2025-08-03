@@ -1,0 +1,9 @@
+http://localhost:5001/snapdestination-e76e0/us-central1/register?name=u1&password=p1
+
+
+http://localhost:5001/snapdestination-e76e0/us-central1/register?name=u1&password=p1&friends=u2,u3
+
+
+http://localhost:5001/snapdestination-e76e0/us-central1/login?name=u1&password=p1
+
+http://localhost:5001/snapdestination-e76e0/us-central1/addpost?name=u1&token=ttt&text=HelloWorld
