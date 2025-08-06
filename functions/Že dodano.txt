@@ -2,27 +2,14 @@ Avtentikacija (delno):
 
 2. Shramba in datoteke (onFileUpload)
 
-Časovni dogodki(delno)
+WIP Časovni dogodki(delno)
 
 
 6. Uporabniški dogodki (onRequest):
 Dejavnosti uporabnikov, kot so prijave, registracije, transakcije in druge interakcije v aplikacij
 
-WIP:
+WIP. Sporočila in obveščanje:
 
-
-1. spremembe v bazah, boš moral povezati neko bazo z emulatorjem
-
-
-
-3. Sporočila in obveščanje:
-
-Prejem sporočil iz sistemov za upravljanje vrst sporočil (message queues) ali storitev za obveščanje lahko sproži funkcije. To vključuje sisteme kot so RabbitMQ, Kafka, Amazon SQS, Google Pub/Sub itd.
-
-5. Logi in nadzorni dogodki:
-Analiza dnevniških zapisov ali nadzornih dogodkov iz sistemov za spremljanje in logiranje lahko sproži funkcije za nadaljnjo obdelavo ali alarmiranje.
-
-9. Dogodki, povezani z razvojnimi in operativnimi procesi, kot so spremembe v repozitorijih kode, gradnje CI/CD cevovodov ali konfiguracijske spremembe, lahko sprožijo funkcije za avtomatizacijo procesov.
 
 ///bodies:
 
@@ -36,3 +23,15 @@ register:
 }
 
 http://127.0.0.1:5001/snapdestination-e76e0/us-central1/generateCustomToken
+
+5 glavnih funkcij:
+
+registracija,login in avtentikacija
+
+avtomatsko brisanje postov
+
+nalaganje postov
+
+pošiljanje sporočila prijateljom
+
+posodabljanje posta //morda

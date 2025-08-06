@@ -1,0 +1,11 @@
+register  /onRequest
+
+upload image /onRequest
+
+on image upload  /onObjectFinalized
+
+add post  /onRequest
+
+delete old post  /onSchedule
+
+on new post upload  /onDocumentCreated

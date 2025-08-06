@@ -1,24 +1,20 @@
 const {onRequest} = require("firebase-functions/v2/https");
-const logger = require("firebase-functions/logger");
 const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore,getStorage} = require("firebase-admin/firestore");
 const { onObjectFinalized } = require("firebase-functions/v2/storage");
 const { getAuth } = require("firebase-admin/auth"); // Import Firebase Admin Auth for user management
+const { v4: uuidv4 } = require('uuid');
+
 //
+const logger = require("firebase-functions/logger");
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
 if (admin.apps.length === 0) {
     admin.initializeApp();
 }
-//
-/*
-initializeApp({
-  storageBucket: "your-bucket-name.appspot.com",
-});*/
-
 
 exports.onFileUpload = onObjectFinalized(async (event) => {
   const file = event.data;
@@ -51,132 +47,18 @@ exports.onFileUpload = onObjectFinalized(async (event) => {
   return null;
 });
 
-exports.register = onRequest(async (req, res) => {
-  // Ensure the request method is POST for sensitive operations like registration
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: "Method Not Allowed. Use POST." });
-    return;
-  }
-  // Extract user registration data from the request body
-  const { email, password, name, friends: rawFriends } = req.body;
-  // Basic validation for required fields
-  if (!email || !password || !name) {
-    res.status(400).json({ error: "Missing email, password, or name in request body" });
-    return;
-  }
-  // Normalize friends data: ensure it's an array of strings
-  const friends = Array.isArray(rawFriends)
-    ? rawFriends
-    : typeof rawFriends === "string"
-      ? rawFriends.split(",").map(f => f.trim())
-      : [];
-  try {
-    const userRecord = await getAuth().createUser({
-      email: email,
-      password: password,
-      displayName: name, // Set display name for the user
-    });
-    await getFirestore().collection("users").doc(userRecord.uid).set({
-      email: userRecord.email,
-      displayName: userRecord.displayName,
-      friends: friends,
-      createdAt: new Date(), // Record creation timestamp
-    });
-    logger.info(`User registered successfully. UID: ${userRecord.uid}, Email: ${userRecord.email}`);
-    res.status(201).json({ result: `User registered successfully with UID: ${userRecord.uid}` });
-
-  } catch (error) {
-    logger.error("Error during user registration:", error);
-    if (error.code === 'auth/email-already-exists') {
-      res.status(409).json({ error: "Registration failed: This email is already registered." });
-    } else {
-      res.status(500).json({ error: "Failed to register user", details: error.message });
-    }
-  }
-});
-
-exports.login = onRequest(async (req, res) => {
-  if (req.method !== 'GET') {
-      res.status(405).json({ error: "Method Not Allowed. Use GET." });
-      return;
-  }
-  if (!req.auth) {
-    res.status(401).json({ error: "Unauthorized. Please provide a valid Firebase ID token." });
-    return;
-  }
-  const uid = req.auth.uid; // Get the User ID from the authenticated request object
-  logger.info(`Login endpoint accessed by authenticated user: ${uid}`);
-  try {
-    const userDoc = await getFirestore().collection("users").doc(uid).get();
-    let userDataFromFirestore = {};
-    if (userDoc.exists) {
-      userDataFromFirestore = userDoc.data();
-      logger.info(`Firestore data found for user ${uid}`);
-    } else {
-      logger.warn(`User profile data not found in Firestore for UID: ${uid}`);
-    }
-    res.status(200).json({
-      message: "Authenticated successfully",
-      uid: uid,
-      email: req.auth.token.email, // Email from the ID token
-      displayName: req.auth.token.name || "N/A", // Display name from ID token
-      friends: userDataFromFirestore.friends || [],
-    });
-
-  } catch (error) {
-    logger.error("Error processing authenticated login request:", error);
-    res.status(500).json({ error: "Internal server error during user data retrieval." });
-  }
-});
-/*
-exports.addPost = functions.https.onCall(async (data, context) => {
-    // The `context.auth` object is automatically populated by Firebase SDKs.
-    // If it's missing, the request is unauthenticated.
-    logger.info("data :", data);
-    logger.info("string data :", JSON.stringify(data));
-    try{
-    if (!context.auth) {
-        throw new functions.https.HttpsError(
-            'unauthenticated',
-            'You must be logged in to add a post.'
-        );
-    }
-    const userId = context.auth.uid;
-    const { title, content } = data;
-    
-    if (!title || !content) {
-        throw new functions.https.HttpsError(
-            'invalid-argument',
-            'Missing title or content for the post.'
-        );
-    }
-    try {
-        const postRef = await getFirestore().collection("posts").add({
-            userId: userId,
-            title: title,
-            content: content,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(), // Use a server timestamp
-        });
-        
-        // This is a cleaner way to return success
-        return { result: `Post added successfully with ID: ${postRef.id}` };
-    } catch (error) {
-        functions.logger.error(`Error adding post for user ${userId}:`, error);
-        throw new functions.https.HttpsError(
-            'internal',
-            'Failed to add post',
-            error.message
-        );
-    }
-  }catch(error){
-    logger.error("AAAAA error:", error);
-
-    res.status(500).json({ error: "Internal server error during user data retrieval." });
-  }
-    
-});
-*/
 exports.addPost = functions.https.onRequest(async (req, res) => {
+
+  res.set('Access-Control-Allow-Origin', '*');
+  if (req.method === 'OPTIONS') {
+    // Send response to OPTIONS requests to allow preflight checks
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.set('Access-Control-Max-Age', '3600');
+    res.status(204).send('');
+    return;
+  }
+  
   if (req.method !== 'POST') {
     res.status(405).json({ error: "Method Not Allowed. Use POST." });
     return;
@@ -196,7 +78,7 @@ exports.addPost = functions.https.onRequest(async (req, res) => {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const userId = decodedToken.uid; // Get the user ID from the verified token
 
-    const { title, content } = req.body;
+    const { title, content, imageUrl } = req.body;
     if (!title || !content) {
       res.status(400).json({ error: "Missing title or content for the post." });
       return;
@@ -206,6 +88,7 @@ exports.addPost = functions.https.onRequest(async (req, res) => {
       userId: userId,
       title: title,
       content: content,
+      imageUrl: imageUrl || null, 
       createdAt: new Date(),
     });
     
@@ -217,13 +100,6 @@ exports.addPost = functions.https.onRequest(async (req, res) => {
   }
 });
 
-
-
-
-
-// This is the new function to be added to your index.js file.
-// It triggers whenever a new document is created in the 'posts' collection.
-
 exports.onNewPostNotification = onDocumentCreated("posts/{postId}", async (event) => {
   // Extract the newly created post document from the event.
   const postSnapshot = event.data;
@@ -231,7 +107,6 @@ exports.onNewPostNotification = onDocumentCreated("posts/{postId}", async (event
     logger.info("No data associated with the event.");
     return;
   }
-
   const newPost = postSnapshot.data();
   const postId = postSnapshot.id;
   const authorUserId = newPost.userId; // Get the ID of the user who made the post
@@ -242,6 +117,8 @@ exports.onNewPostNotification = onDocumentCreated("posts/{postId}", async (event
     const db = getFirestore();
 
     // 1. Fetch the author's user document to get their friends list.
+    logger.info(`author user ID: ${authorUserId}`);
+    console.log(`author user ID: ${authorUserId}`)
     const userDocRef = db.collection("users").doc(authorUserId);
     const userDoc = await userDocRef.get();
 
@@ -294,11 +171,160 @@ exports.onNewPostNotification = onDocumentCreated("posts/{postId}", async (event
   }
 });
 
+exports.register = onRequest(async (req, res) => {
+  // Ensure the request method is POST for sensitive operations like registration
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: "Method Not Allowed. Use POST." });
+    return;
+  }
+  // Extract user registration data from the request body
+  const { email, password, name, friends: rawFriends } = req.body;
+  // Basic validation for required fields
+  if (!email || !password || !name) {
+    res.status(400).json({ error: "Missing email, password, or name in request body" });
+    return;
+  }
+  // Normalize friends data: ensure it's an array of strings
+  const friends = Array.isArray(rawFriends)
+    ? rawFriends
+    : typeof rawFriends === "string"
+      ? rawFriends.split(",").map(f => f.trim())
+      : [];
+  try {
+    const userRecord = await getAuth().createUser({
+      email: email,
+      password: password,
+      displayName: name, // Set display name for the user
+    });
 
+    logger.info(`userRecord.email: ${userRecord.email}`);
+    logger.info(`userRecord displayName: ${userRecord.displayName}`);
+    logger.info(`friends: ${friends}`);
+    await getFirestore().collection("users").doc(userRecord.uid).set({
+      email: userRecord.email,
+      displayName: userRecord.displayName,
+      friends: friends,
+      createdAt: new Date(), // Record creation timestamp
+    });
+    logger.info(`User registered successfully. UID: ${userRecord.uid}, Email: ${userRecord.email}`);
+    res.status(201).json({ result: `User registered successfully with UID: ${userRecord.uid}` });
+
+  } catch (error) {
+    logger.error("Error during user registration:", error);
+    if (error.code === 'auth/email-already-exists') {
+      res.status(409).json({ error: "Registration failed: This email is already registered." });
+    } else {
+      res.status(500).json({ error: "Failed to register user", details: error.message });
+    }
+  }
+});
 /*
-exports.deleteOldPosts = onSchedule("every 5 minutes", async () => {
-  const nMinutes = 10;
+exports.login = onRequest(async (req, res) => {
+  if (req.method !== 'GET') {
+      res.status(405).json({ error: "Method Not Allowed. Use GET." });
+      return;
+  }
+  if (!req.auth) {
+    res.status(401).json({ error: "Unauthorized. Please provide a valid Firebase ID token." });
+    return;
+  }
+  const uid = req.auth.uid; // Get the User ID from the authenticated request object
+  logger.info(`Login endpoint accessed by authenticated user: ${uid}`);
+  try {
+    const userDoc = await getFirestore().collection("users").doc(uid).get();
+    let userDataFromFirestore = {};
+    if (userDoc.exists) {
+      userDataFromFirestore = userDoc.data();
+      logger.info(`Firestore data found for user ${uid}`);
+    } else {
+      logger.warn(`User profile data not found in Firestore for UID: ${uid}`);
+    }
+    res.status(200).json({
+      message: "Authenticated successfully",
+      uid: uid,
+      email: req.auth.token.email, // Email from the ID token
+      displayName: req.auth.token.name || "N/A", // Display name from ID token
+      friends: userDataFromFirestore.friends || [],
+    });
+
+  } catch (error) {
+    logger.error("Error processing authenticated login request:", error);
+    res.status(500).json({ error: "Internal server error during user data retrieval." });
+  }
+});*/
+
+exports.uploadImage = onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  if (req.method === 'OPTIONS') {
+    res.set('Access-Control-Allow-Methods', 'POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.status(204).send('');
+    return;
+  }
+  
+  if (req.method !== 'POST') {
+    res.status(405).send('Method Not Allowed');
+    return;
+  }
+
+  // Verify the user's token before processing the upload
+  const authorizationHeader = req.headers.authorization;
+  if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
+    res.status(401).send('Unauthorized');
+    return;
+  }
+
+  const idToken = authorizationHeader.split('Bearer ')[1];
+  try {
+    await getAuth().verifyIdToken(idToken);
+  } catch (error) {
+    logger.error("Token verification failed:", error);
+    res.status(401).send('Unauthorized');
+    return;
+  }
+
+  // Extract the Base64 data and metadata from the JSON body
+  const { imageData, filename, mimeType } = req.body;
+  if (!imageData || !filename || !mimeType) {
+    res.status(400).send('Missing image data, filename, or mimeType.');
+    return;
+  }
+
+  try {
+    // Decode the Base64 string into a Buffer
+    const imageBuffer = Buffer.from(imageData, 'base64');
+    
+    const bucket = admin.storage().bucket();
+    const uuid = uuidv4();
+    const destination = `images/${uuid}-${filename}`;
+    
+    const file = bucket.file(destination);
+    
+    // Save the buffer directly to Firebase Storage
+    await file.save(imageBuffer, {
+      metadata: {
+        contentType: mimeType,
+      },
+      public: true, // Make the file publicly accessible
+      gzip: true,
+      cacheControl: 'public, max-age=31536000',
+    });
+
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${destination}`;
+    
+    res.status(200).json({ url: publicUrl });
+  } catch (error) {
+    logger.error('Error during file upload:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+
+exports.deleteOldPosts = onSchedule("every 1 minutes", async () => {
+  const nMinutes = 1;
+  const now = new Date(); // Define `now` here
   const cutoff = new Date(now - nMinutes * 60 * 1000);
+  logger.info('CUTOFF:', cutoff);
   const snapshot = await getFirestore().collection("posts")
     .where("timestamp", "<", cutoff)
     .get();
@@ -308,5 +334,5 @@ exports.deleteOldPosts = onSchedule("every 5 minutes", async () => {
   await Promise.all(deletes);
 
   logger.info(`Deleted ${deletes.length} old posts`);
-});*/
+});
 

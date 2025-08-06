@@ -34,8 +34,7 @@ const App = () => {
   const [status, setStatus] = useState({ message: 'Not logged in.', isError: false });
   const [isLoading, setIsLoading] = useState(false);
   const [loginTrigger, setLoginTrigger] = useState(false);
- // const [loginEmail, setLoginEmail] = useState('');
- // const [loginPassword, setLoginPassword] = useState('');
+  
   
   // Helper function to update the status text
   const updateStatus = (message, isError = false) => {
@@ -88,7 +87,7 @@ const App = () => {
    }, [auth]);
    //}, [auth, updateStatus]); 
 ////////////////////////
-  /*
+
   useEffect(() => {
     const callServerLogin = async () => {
       if (!currentUser) {
@@ -121,7 +120,7 @@ const App = () => {
 ///////////////////////////
   useEffect(() => {
   }, [loginTrigger]);
-*/
+
   // The URL for your serverless functions
 
 
@@ -136,6 +135,7 @@ const App = () => {
         return;
     }
     try {
+ 
        //await createUserWithEmailAndPassword(auth, email, password);
       const friends = friendList.split(',');
       console.log("FRIENDS:",friends )
@@ -155,30 +155,6 @@ const App = () => {
       updateStatus(`Registration failed: ${error.message}`, true);
     }
   };
-const handleLogin = async () => {
-    if (!email || !password) {
-        updateStatus("Please enter an email and password to log in.", true);
-        return;
-    }
-    if (!auth) {
-        updateStatus("Firebase Auth is not initialized.", true);
-        return;
-    }
-    setIsLoading(true);
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-        updateStatus("Logged in successfully!");
-        // The onAuthStateChanged listener will handle setting the currentUser state.
-    } catch (error) {
-        updateStatus(`Login failed: ${error.message}`, true);
-    } finally {
-        setIsLoading(false);
-    }
-};
-
-
-
-  /* previous handleLogin
   const handleLogin = async () => {
     try {
     if (!email || !password) {
@@ -216,7 +192,7 @@ const handleLogin = async () => {
     } catch (error) {
       updateStatus(`Login failed: ${error.message}`, true);
     }
-  };*/
+  };
   // Handler for image file selection
   const handleImageChange = (e) => {
     if (e.target.files[0]) {
@@ -358,14 +334,13 @@ const handleLogin = async () => {
         {/* Authenticated Actions Section */}
         <div className={currentUser ? 'mt-6 space-y-4' : 'hidden'}>
           <h2 className="text-xl font-semibold text-gray-700">Authenticated Actions</h2>
-          {/*
           <button
            // onClick={handleCallLoginFunction}
             onClick={handleLogin}
             className="w-full bg-purple-600 text-white font-medium py-2 px-4 rounded-md hover:bg-purple-700 transition duration-300 ease-in-out"
           >
             Call Server `login` Function
-          </button>*/}
+          </button>
           <div className="mt-4">
             <input
               id="postTitle"

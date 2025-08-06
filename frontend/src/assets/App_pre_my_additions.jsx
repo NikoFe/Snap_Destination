@@ -9,9 +9,13 @@ const AuthContext = createContext(null);
 
 // Custom hook to use the AuthContext
 const useAuth = () => useContext(AuthContext);
+
 // Main App component
 const App = () => {
-    const functionsUrl = "http://127.0.0.1:5001";
+  // Your web app's Firebase configuration
+  // IMPORTANT: Replace with your actual Firebase project configuration
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
     const firebaseConfig = {
       apiKey: "AIzaSyC9GZth2opQWG4KwKqmIa5xHGn1klxRbDY",
       authDomain: "snapdestination-e76e0.firebaseapp.com",
@@ -22,10 +26,10 @@ const App = () => {
       measurementId: "G-FJLNP0KPVQ"
     };
 
+
+
   const [currentUser, setCurrentUser] = useState(null);
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [friendList, setFriendList] = useState('');
   const [password, setPassword] = useState('');
   const [postTitle, setPostTitle] = useState('');
   const [postContent, setPostContent] = useState('');
@@ -33,9 +37,6 @@ const App = () => {
   const [imageUrl, setImageUrl] = useState(null);
   const [status, setStatus] = useState({ message: 'Not logged in.', isError: false });
   const [isLoading, setIsLoading] = useState(false);
-  const [loginTrigger, setLoginTrigger] = useState(false);
- // const [loginEmail, setLoginEmail] = useState('');
- // const [loginPassword, setLoginPassword] = useState('');
   
   // Helper function to update the status text
   const updateStatus = (message, isError = false) => {
@@ -85,45 +86,10 @@ const App = () => {
       }
     });
     return () => unsubscribe(); // Cleanup the listener on unmount
-   }, [auth]);
-   //}, [auth, updateStatus]); 
-////////////////////////
-  /*
-  useEffect(() => {
-    const callServerLogin = async () => {
-      if (!currentUser) {
-        // If no user is logged in, do nothing.
-        return;
-      }
-      try {
-        const token = await currentUser.getIdToken();
-        updateStatus("Fetching ID token and calling the `login` server function...");
-        
-        const loginUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/login`; 
-        
-        const response = await axios.get(loginUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        updateStatus(`Server Login Function Response:\n${JSON.stringify(response.data, null, 2)}`);
-      } catch (error) {
-        const serverError = error.response ? error.response.data.error : error.message;
-        updateStatus(`Failed to call serverless 'login' function: ${serverError}`, true);
-      }
-    };
+  }, [auth]);
 
-    // Call the server login function only if a user is logged in
-    callServerLogin();
-  }, [currentUser, functionsUrl, firebaseConfig.projectId]); // Dependencies for useEffect
-///////////////////////////
-  useEffect(() => {
-  }, [loginTrigger]);
-*/
   // The URL for your serverless functions
-
+  const functionsUrl = "http://127.0.0.1:5001";
 
   // Event handlers for UI interactions
   const handleRegister = async () => {
@@ -136,51 +102,26 @@ const App = () => {
         return;
     }
     try {
-       //await createUserWithEmailAndPassword(auth, email, password);
-      const friends = friendList.split(',');
-      console.log("FRIENDS:",friends )
-      const uploadUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/register`;
-          const registerResponse = await axios.post(uploadUrl, {
-            email: email,
-            password: password,
-            name: username,
-            friends: friends
-        }, 
-        );
-      updateStatus(`Registration successful. Response: ${JSON.stringify(registerResponse.data)}`);
-      // After successful registration, sign the user in so the onAuthStateChanged listener fires
-      await signInWithEmailAndPassword(auth, email, password);
+      await createUserWithEmailAndPassword(auth, email, password);
+      /*
+      const uploadUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/uploadImage`;
+          const uploadResponse = await axios.post(uploadUrl, {
+            imageData: imageData,
+            filename: imageFile.name,
+            mimeType: imageFile.type,
+        }, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json', // Send as JSON
+          },
+        });*/
       // onAuthStateChanged listener will handle UI updates
     } catch (error) {
       updateStatus(`Registration failed: ${error.message}`, true);
     }
   };
-const handleLogin = async () => {
-    if (!email || !password) {
-        updateStatus("Please enter an email and password to log in.", true);
-        return;
-    }
-    if (!auth) {
-        updateStatus("Firebase Auth is not initialized.", true);
-        return;
-    }
-    setIsLoading(true);
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-        updateStatus("Logged in successfully!");
-        // The onAuthStateChanged listener will handle setting the currentUser state.
-    } catch (error) {
-        updateStatus(`Login failed: ${error.message}`, true);
-    } finally {
-        setIsLoading(false);
-    }
-};
 
-
-
-  /* previous handleLogin
   const handleLogin = async () => {
-    try {
     if (!email || !password) {
       updateStatus("Please enter an email and password to log in.", true);
       return;
@@ -189,17 +130,28 @@ const handleLogin = async () => {
         updateStatus("Firebase Auth is not initialized.", true);
         return;
     }
-     updateStatus("Signing in with Firebase Authentication...");
-     
-     await signInWithEmailAndPassword(auth, email, password);
-      if (!currentUser) {
-        updateStatus("You must be logged in to call this function.", true);
-        return;
-      }
-      updateStatus("Signing in with Firebase Authentication...");
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged listener will handle UI updates
+    } catch (error) {
+      updateStatus(`Login failed: ${error.message}`, true);
+    }
+  };
+  
+  const handleCallLoginFunction = async () => {
+    if (!currentUser) {
+      updateStatus("You must be logged in to call this function.", true);
+      return;
+    }
+    
+    try {
       const token = await currentUser.getIdToken();
       updateStatus("Fetching ID token and calling the `login` function...");
-      const loginUrl = `${functionsUrl}/snapdestination-e76e0/us-central1/login`; 
+      
+      // IMPORTANT: Replace with your function URL
+      snapdestination-e76e0/us-central1/uploadImage
+
+      //const loginUrl = `${functionsUrl}/snapdestination-e76e0/us-central1/login`; 
       
       const response = await fetch(loginUrl, {
         method: 'GET',
@@ -208,15 +160,19 @@ const handleLogin = async () => {
           'Content-Type': 'application/json'
         }
       });
-       updateStatus("response of login: ", JSON.stringify(response) );
-
-      //////////////////////////////////////////
       
-      // onAuthStateChanged listener will handle UI updates
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Something went wrong');
+      }
+      
+      updateStatus(`Server Login Function Response:\n${JSON.stringify(data, null, 2)}`);
     } catch (error) {
-      updateStatus(`Login failed: ${error.message}`, true);
+      updateStatus(`Failed to call serverless 'login' function: ${error.message}`, true);
     }
-  };*/
+  };
+
   // Handler for image file selection
   const handleImageChange = (e) => {
     if (e.target.files[0]) {
@@ -225,19 +181,23 @@ const handleLogin = async () => {
       setImageFile(null);
     }
   };
+
   const handleAddPost = async () => {
     if (!currentUser) {
       updateStatus("You must be logged in to add a post.", true);
       return;
     }
+    
     if (!postTitle || !postContent) {
       updateStatus("Please enter a title and content for the post.", true);
       return;
     }
    setIsLoading(true);
     let uploadedImageUrl = null;
+
     try {
       const token = await currentUser.getIdToken();
+
       if (imageFile) {
         updateStatus("Uploading image to Cloud Storage via Cloud Function...");
         
@@ -265,10 +225,13 @@ const handleLogin = async () => {
             'Content-Type': 'application/json', // Send as JSON
           },
         });
+        
         uploadedImageUrl = uploadResponse.data.url;
         updateStatus(`Image uploaded successfully. URL: ${uploadedImageUrl}`);
       }
+
       updateStatus("Fetching ID token and calling the `addPost` function...");
+      
       // IMPORTANT: Replace with your function URL
       const addPostUrl = `${functionsUrl}/snapdestination-e76e0/us-central1/addPost`; 
    
@@ -283,7 +246,21 @@ const handleLogin = async () => {
         imageUrl: uploadedImageUrl
         }, {headers:customHeader });
 
+      /*
+      const response = await fetch(addPostUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body:JSON.stringify({ title: postTitle, content: postContent })
+      });*/
+
+
+ 
       console.log("MMMMMMMMMMMM: ", JSON.stringify(response.data))
+      const data = await response.json();
+      
       if (!response.ok) {
         throw new Error(data.error || 'Something went wrong');
       }
@@ -299,24 +276,17 @@ const handleLogin = async () => {
       updateStatus(`Failed to call serverless 'addPost' function: ${error.message}`, true);
     }
   };
+
   return (
     <div className="bg-gray-100 flex items-center justify-center min-h-screen p-4">
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Test Client</h1>
+        
         {/* Authentication Section */}
         <div className={currentUser ? 'hidden' : 'space-y-4'}>
-          {/*<h2 className="text-xl font-semibold text-gray-700">Login</h2>*/}
+          <h2 className="text-xl font-semibold text-gray-700">Login</h2>
           <input
-            id="username-input"
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-
-          <input
-            id="email-input"
+            id="email"
             type="email"
             placeholder="Email"
             value={email}
@@ -324,19 +294,11 @@ const handleLogin = async () => {
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <input
-            id="password-input"
+            id="password"
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <input
-            id="friendlist-input"
-            type="text"
-            placeholder="Friendlist"
-            value={friendList}
-            onChange={(e) => setFriendList(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <div className="flex space-x-2">
@@ -358,14 +320,12 @@ const handleLogin = async () => {
         {/* Authenticated Actions Section */}
         <div className={currentUser ? 'mt-6 space-y-4' : 'hidden'}>
           <h2 className="text-xl font-semibold text-gray-700">Authenticated Actions</h2>
-          {/*
           <button
-           // onClick={handleCallLoginFunction}
-            onClick={handleLogin}
+            onClick={handleCallLoginFunction}
             className="w-full bg-purple-600 text-white font-medium py-2 px-4 rounded-md hover:bg-purple-700 transition duration-300 ease-in-out"
           >
             Call Server `login` Function
-          </button>*/}
+          </button>
           <div className="mt-4">
             <input
               id="postTitle"
@@ -405,9 +365,12 @@ const handleLogin = async () => {
             )}
             <button
               onClick={handleAddPost}
-              className={`w-full mt-2 text-white font-medium py-2 px-4 rounded-md transition duration-300 ease-in-out `}
+              className={`w-full mt-2 text-white font-medium py-2 px-4 rounded-md transition duration-300 ease-in-out ${
+                isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700'
+              }`}
+              disabled={isLoading}
             >
-             Add Post
+              {isLoading ? 'Creating Post...' : 'Add Post'}
             </button>
           </div>
           <button
@@ -432,4 +395,5 @@ const handleLogin = async () => {
     </div>
   );
 };
+
 export default App;
