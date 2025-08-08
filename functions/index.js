@@ -6,6 +6,7 @@ const {getFirestore,getStorage} = require("firebase-admin/firestore");
 const { onObjectFinalized } = require("firebase-functions/v2/storage");
 const { getAuth } = require("firebase-admin/auth"); // Import Firebase Admin Auth for user management
 const { v4: uuidv4 } = require('uuid');
+//const { collection, getDocs } = require("firebase/firestore");
 
 //
 const logger = require("firebase-functions/logger");
@@ -15,6 +16,142 @@ const admin = require('firebase-admin');
 if (admin.apps.length === 0) {
     admin.initializeApp();
 }
+exports.getSingleUser = onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  if (req.method === 'OPTIONS') {
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.set('Access-Control-Max-Age', '3600');
+    res.status(204).send('');
+    return;
+  }
+  try {
+    if (req.method !== 'GET') {
+      res.status(405).json({ error: "Method Not Allowed. Use GET." });
+      return;
+    }
+     const { username } = req.query;
+      console.log("jjjjjjjjjjjjjjjjjjjjjj username: ",username )
+    if (!username) {
+      res.status(400).json({ error: "Username query parameter is missing." });
+      return;
+    }
+
+    const usersRef = getFirestore().collection("users");
+    const querySnapshot = await usersRef.where("displayName", "==", username).get();
+  /*
+      const filteredUser = getFirestore().collection("users").where("displayName", "=", username)
+        .get();
+*/
+  //  logger.info(`Fetched ${users.length} users.`);
+    if (querySnapshot.empty) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+    const userDoc = querySnapshot.docs[0];
+    const user = {
+      id: userDoc.id,
+      data: userDoc.data()
+    };
+    
+    console.log("filtered user: ", user);
+
+    res.status(200).json({ user });
+    }
+ catch (error) {
+  console.error(`Error:`, error);
+  res.status(500).json({ error: "Internal Server Error", details: error.message });
+  } 
+});
+
+exports.getUsers = onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  if (req.method === 'OPTIONS') {
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.set('Access-Control-Max-Age', '3600');
+    res.status(204).send('');
+    return;
+  }
+  try {
+    if (req.method !== 'GET') {
+      res.status(405).json({ error: "Method Not Allowed. Use GET." });
+      return;
+    }
+      const usersRef = getFirestore().collection("users");
+      const querySnapshot = await usersRef.get();
+
+      const users = [];
+      querySnapshot.forEach((doc) => {
+        // Get the data and the document ID
+        users.push({
+          id: doc.id,
+          data: doc.data(),
+        });
+     //  logger.info(`IIIIIIIIIIIIIIIIIIIIIIIII: ${doc.id}`);
+      // logger.info(`DDDDDDDDDDDDDDDDDDDDDDDDD: ${doc.data}`);
+      });
+  //  logger.info(`Fetched ${users.length} users.`);
+    res.status(200).json({ users });
+    }
+ catch (error) {
+    logger.error(`Error:`, error);
+  } 
+});
+
+
+exports.getPosts = onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  if (req.method === 'OPTIONS') {
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.set('Access-Control-Max-Age', '3600');
+    res.status(204).send('');
+    console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`)
+    logger.info(`~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:`);
+    return;
+  }
+  try {
+    if (req.method !== 'GET') {
+      res.status(405).json({ error: "Method Not Allowed. Use GET." });
+      return;
+    }
+     const { userId } = req.query;
+       console.log(`UUUUUUUUUUUUUUUser id: ${userId}`)
+      logger.info(`UUUUUUUUUUUUUUUser id: ${userId}`);//why does this not print?
+      const  allPosts = getFirestore().collection("posts");
+      const allPosts2 = await allPosts.where("userId", "==", userId).get();
+
+      const posts = [];
+      allPosts2.forEach((doc) => {
+        // Get the data and the document ID
+        posts.push({
+          
+          id: doc.id,
+          data: doc.data(),
+          /*
+          created_at: doc   ,
+          imageUrl:    ,
+          title: doc.data(),
+          userId:*/
+
+        });
+       console.log(`KKKKKKKKKKKKKKKKKKKKKKKKKK: ${doc.id}`)//why does this not print?
+       console.log(`LLLLLLLLLLLLLLLLLLLLL: ${doc.data}`)//why does this not print?
+       logger.info(`KKKKKKKKKKKKKKKKKKKKKKKKKK: ${doc.id}`);//why does this not print?
+       logger.info(`LLLLLLLLLLLLLLLLLLLLL: ${doc.data}`);//why does this not print?
+      });
+  //  logger.info(`Fetched ${users.length} users.`);
+    res.status(200).json({ posts });
+    }
+ catch (error) {
+    logger.error(`Error:`, error);
+  } 
+});
+
+
+
+
 
 exports.onFileUpload = onObjectFinalized(async (event) => {
   const file = event.data;
@@ -31,7 +168,7 @@ exports.onFileUpload = onObjectFinalized(async (event) => {
   }
   const publicUrl = `https://storage.googleapis.com/${bucket}/${filePath}`;
   //const publicUrl = `https://storage.googleapis.com/<span class="math-inline">\{bucket\}/</span>{filePath}`;
-  logger.info(`Public URL for uploaded image: ${publicUrl}`);
+  //logger.info(`Public URL for uploaded image: ${publicUrl}`);
   try {
     await getFirestore().collection("images").add({
       filePath: filePath,
@@ -46,7 +183,6 @@ exports.onFileUpload = onObjectFinalized(async (event) => {
   }
   return null;
 });
-
 exports.addPost = functions.https.onRequest(async (req, res) => {
 
   res.set('Access-Control-Allow-Origin', '*');
@@ -134,7 +270,7 @@ exports.onNewPostNotification = onDocumentCreated("posts/{postId}", async (event
       logger.info(`User ${authorUserId} has no friends to notify.`);
       return;
     }
-
+    logger.info(`FriendList: ${friendsList}`);
     // 2. Iterate through the author's friends and create a notification for each.
     // For this example, we will use a 'notifications' subcollection under each user.
     // In a real-world app, you might use a service like Firebase Cloud Messaging (FCM).
@@ -185,6 +321,9 @@ exports.register = onRequest(async (req, res) => {
     return;
   }
   // Normalize friends data: ensure it's an array of strings
+  //console.log("FFFFFFFFFFFFFFFFFFFFFFF :",rawFriends)
+  logger.info(`friends ${rawFriends}`);
+  
   const friends = Array.isArray(rawFriends)
     ? rawFriends
     : typeof rawFriends === "string"
@@ -218,40 +357,6 @@ exports.register = onRequest(async (req, res) => {
     }
   }
 });
-/*
-exports.login = onRequest(async (req, res) => {
-  if (req.method !== 'GET') {
-      res.status(405).json({ error: "Method Not Allowed. Use GET." });
-      return;
-  }
-  if (!req.auth) {
-    res.status(401).json({ error: "Unauthorized. Please provide a valid Firebase ID token." });
-    return;
-  }
-  const uid = req.auth.uid; // Get the User ID from the authenticated request object
-  logger.info(`Login endpoint accessed by authenticated user: ${uid}`);
-  try {
-    const userDoc = await getFirestore().collection("users").doc(uid).get();
-    let userDataFromFirestore = {};
-    if (userDoc.exists) {
-      userDataFromFirestore = userDoc.data();
-      logger.info(`Firestore data found for user ${uid}`);
-    } else {
-      logger.warn(`User profile data not found in Firestore for UID: ${uid}`);
-    }
-    res.status(200).json({
-      message: "Authenticated successfully",
-      uid: uid,
-      email: req.auth.token.email, // Email from the ID token
-      displayName: req.auth.token.name || "N/A", // Display name from ID token
-      friends: userDataFromFirestore.friends || [],
-    });
-
-  } catch (error) {
-    logger.error("Error processing authenticated login request:", error);
-    res.status(500).json({ error: "Internal server error during user data retrieval." });
-  }
-});*/
 
 exports.uploadImage = onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
@@ -319,7 +424,6 @@ exports.uploadImage = onRequest(async (req, res) => {
   }
 });
 
-
 exports.deleteOldPosts = onSchedule("every 1 minutes", async () => {
   const nMinutes = 1;
   const now = new Date(); // Define `now` here
@@ -335,4 +439,38 @@ exports.deleteOldPosts = onSchedule("every 1 minutes", async () => {
 
   logger.info(`Deleted ${deletes.length} old posts`);
 });
+/*
+exports.login = onRequest(async (req, res) => {
+  if (req.method !== 'GET') {
+      res.status(405).json({ error: "Method Not Allowed. Use GET." });
+      return;
+  }
+  if (!req.auth) {
+    res.status(401).json({ error: "Unauthorized. Please provide a valid Firebase ID token." });
+    return;
+  }
+  const uid = req.auth.uid; // Get the User ID from the authenticated request object
+  logger.info(`Login endpoint accessed by authenticated user: ${uid}`);
+  try {
+    const userDoc = await getFirestore().collection("users").doc(uid).get();
+    let userDataFromFirestore = {};
+    if (userDoc.exists) {
+      userDataFromFirestore = userDoc.data();
+      logger.info(`Firestore data found for user ${uid}`);
+    } else {
+      logger.warn(`User profile data not found in Firestore for UID: ${uid}`);
+    }
+    res.status(200).json({
+      message: "Authenticated successfully",
+      uid: uid,
+      email: req.auth.token.email, // Email from the ID token
+      displayName: req.auth.token.name || "N/A", // Display name from ID token
+      friends: userDataFromFirestore.friends || [],
+    });
+
+  } catch (error) {
+    logger.error("Error processing authenticated login request:", error);
+    res.status(500).json({ error: "Internal server error during user data retrieval." });
+  }
+});*/
 

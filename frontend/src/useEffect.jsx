@@ -5,8 +5,6 @@ import axios from "axios";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import UserSelect from './UserSelect';
-import Post from './Post';
-import "./App.css";
 
 // Create an Authentication Context to share auth state across components
 const AuthContext = createContext(null);
@@ -53,26 +51,14 @@ const App = () => {
     setStatus({ message, isError });
     console.log(message);
   };
-
+  
   // Initialize Firebase and connect to emulators once
   const [app, setApp] = useState(null);
   const [auth, setAuth] = useState(null);
   const [storage, setStorage] = useState(null);
 
-   const debugPrint = async () => {
-   console.log("////////////////////////////") ;
-   console.log("CURRENT_ID", currentId) ;
-   console.log("username", username) ;
 
-   for(let i=0; i<posts.length; i++){
-    console.log("* ", posts[i]);
-    console.log("* id ", posts[i].id);
-    console.log("* id ", posts[i].data.title);
-  //  console.log("** ", JSON.stringify(posts[i]));
-   }
 
-   console.log("////////////////////////////") ;
-   }
 
   useEffect(() => {
     try {
@@ -97,10 +83,6 @@ const App = () => {
       updateStatus(`Firebase Initialization Failed: ${error.message}`, true);
     }
   }, []);
-
-  
-
-
 /////
   // Effect to listen for authentication state changes
 /*
@@ -114,28 +96,8 @@ console.log("IDDDDDDD |||", currentId,"|||")
 }, [currentId]
 )
 
-  useEffect(  () => {
-    getUserById();
-    fetchUserData(); 
-   }, [currentUser]);
-
-const fetchUserData = async () => {
-  try {
-     if(auth){
-      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getUsers`;
-        const getResponse = await axios.get(getUrl)
-    const fetchedUsers = getResponse.data.users;
-    setAuthUsers(fetchedUsers)
-
-     }
-    }
-    catch (error) {
-        const serverError = error.response ? error.response.data.error : error.message;
-        updateStatus(`Failed to fetch users: ${serverError}`, true);
-      }
-}
-
-const getUserById = async () => {
+  useEffect(() => {
+  async function getUserById(){
   try {
      if(auth){
        console.log("USERNAME: ", username)
@@ -155,7 +117,56 @@ const getUserById = async () => {
         const serverError = error.response ? error.response.data.error : error.message;
         updateStatus(`Failed to fetch users: ${serverError}`, true);
       }
-}
+  }
+
+  async function fetchUserData() {
+  try {
+     if(auth){
+      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getUsers`;
+        const getResponse = await axios.get(getUrl)
+    const fetchedUsers = getResponse.data.users;
+    setAuthUsers(fetchedUsers)
+
+     }
+    }
+    catch (error) {
+        const serverError = error.response ? error.response.data.error : error.message;
+        updateStatus(`Failed to fetch users: ${serverError}`, true);
+      }
+  }
+
+    getUserById();
+   //fetchPostData();
+   fetchUserData();
+
+   }, [currentUser]);
+ /*
+  useEffect(() => {
+    if (!auth) return; // Ensure auth object is initialized
+      async function fetchPostData() {
+  try {
+     if(auth){
+      console.log("oooooooooooooooooooooooooooooo FETCHING POST DATA! "+ currentId)
+
+
+      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getPosts?userId=${currentId}`;
+        const fetchedPosts = await axios.get(getUrl)
+
+     console.log("POSTS POSTS POSTS:", fetchedPosts);
+     console.log("POSTS POSTS POSTS2222:", fetchedPosts.data.posts);
+       const fetchedPosts2 = fetchedPosts.data.posts
+       setPosts(fetchedPosts2)
+    console.log("POSTS POSTS POSTS2:", posts);
+     }
+    }
+    catch (error) {
+        const serverError = error.response ? error.response.data.error : error.message;
+        updateStatus(`Failed to fetch users: ${serverError}`, true);
+      }
+  }
+   fetchPostData()
+   }, [currentId]);*/
+
 
   // Effect to listen for authentication state changes
   useEffect(() => {
@@ -193,9 +204,11 @@ const getUserById = async () => {
         updateStatus(`Failed to fetch users: ${serverError}`, true);
       }
   }
+
+
   // Event handlers for UI interactions
   const handleRegister = async () => {
-    if (!username || !email || !password) {
+    if (!email || !password) {
       updateStatus("Please enter an email and password to register.", true);
       return;
     }
@@ -204,6 +217,10 @@ const getUserById = async () => {
         return;
     }
     try {
+      console.log("YYYYYYYYYYYYYYYYYYYYY: ", authUsers.length);
+      console.log("ZZZZZZZZZZZZZZZZZZZZZ: ", selectedUsers.length);
+
+      // Create a temporary array to store the IDs
       const friendsToAdd = [];
       
       // Loop through all users and find the ones that are selected
@@ -250,9 +267,6 @@ const handleLogin = async () => {
     try {
         await signInWithEmailAndPassword(auth, email, password);
         updateStatus("Logged in successfully!");
-      //  await get();
-        await getUserById();
-        console.log("CURRENTID: ", currentId)
         await fetchPostData();
         // The onAuthStateChanged listener will handle setting the currentUser state.
 
@@ -310,7 +324,6 @@ const handleLogin = async () => {
             'Content-Type': 'application/json', // Send as JSON
           },
         });
-        updateStatus(`////////////////////////////: ${uploadResponse}`);
         uploadedImageUrl = uploadResponse.data.url;
         updateStatus(`Image uploaded successfully. URL: ${uploadedImageUrl}`);
       }
@@ -352,10 +365,13 @@ const handleLogin = async () => {
         {/* Authentication Section */}
         <div className={currentUser ? 'hidden' : 'space-y-4'}>
           {/*<h2 className="text-xl font-semibold text-gray-700">Login</h2>*/}
+
           <UserSelect
             users={authUsers}
             selectedUsers={selectedUsers}
             setSelectedUsers={setSelectedUsers}
+            selectedIds ={selectedIds}
+            setSelectedIds = {setSelectedIds}
           >
           </UserSelect>
 
@@ -464,16 +480,10 @@ const handleLogin = async () => {
             </button>
           </div>
           <button
-           onClick={() => signOut(auth)}
-           className="w-full mt-4 bg-red-600 text-white font-medium py-2 px-4 rounded-md hover:bg-red-700 transition duration-300 ease-in-out"
-          >
-            Log Out
-          </button>
-          <button
-            onClick={() => {debugPrint()}}
+            onClick={() => signOut(auth)}
             className="w-full mt-4 bg-red-600 text-white font-medium py-2 px-4 rounded-md hover:bg-red-700 transition duration-300 ease-in-out"
           >
-             TEST123
+            Log Out
           </button>
         </div>
         
@@ -487,23 +497,6 @@ const handleLogin = async () => {
             {status.message}
           </pre>
         </div>
-          {
-            posts.map((post, index) => (      
-
-            <Post
-            post={post}
-     
-          /*  content={post.data.content}
-            createdAt={post.data.createdAt}
-             imageUrl={post.data.imageUrl}
-             title={post.data.title}
-             userId={post.data.userId}*/
-            
-            ></Post>
-            ))
-            }
-
-
       </div>
     </div>
   );
