@@ -301,16 +301,12 @@ exports.onNewPostNotification = onDocumentCreated("posts/{postId}", async (event
         read: false, // Flag to track if the notification has been read
         createdAt: new Date(),
       });
-
       logger.info(`Prepared notification for friend ${friendUid}`);
     }
-
     // 3. Commit the batch write to Firestore. This is more efficient than
     // multiple individual writes.
     await batch.commit();
-
     logger.info(`Notifications created for ${friendsList.length} friends of user ${authorUserId}.`);
-
   } catch (error) {
     logger.error("Error creating new post notifications:", error);
   }
@@ -448,6 +444,54 @@ exports.deleteOldPosts = onSchedule("every 1 minutes", async () => {
 
   logger.info(`Deleted ${deletes.length} old posts`);
 });
+
+
+ exports.getFriends = onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  if (req.method === 'OPTIONS') {
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.set('Access-Control-Max-Age', '3600');
+    res.status(204).send('');
+    return;
+  }
+  try{
+  // Ensure the request method is POST for sensitive operations like registration
+  if (req.method !== 'GET') {
+    res.status(405).json({ error: "Method Not Allowed. Use GET." });
+    return;
+  }
+  // Extract user registration data from the request body
+  const { userId } = req.query;;
+  // Basic validation for required fields
+  if (!userId ) {
+     res.status(400).json({ error: "Missing id" });
+    return;
+  }
+    const userDocRef = getFirestore().collection("users").doc(userId);
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+    const friendsArray = userDoc.data().friends || [];
+
+
+    console.log(`Got friends!!! ${JSON.stringify(friendsArray)}`);
+    res.status(200).json({ friends: friendsArray });
+
+  } catch (error) {
+    logger.error("Error during user registration:", error);
+    if (error.code === 'auth/email-already-exists') {
+      res.status(409).json({ error: "Registration failed: This email is already registered." });
+    } else {
+      res.status(500).json({ error: "Failed to register user", details: error.message });
+    }
+  }
+});
+
+
 /*
 exports.login = onRequest(async (req, res) => {
   if (req.method !== 'GET') {

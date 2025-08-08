@@ -43,8 +43,8 @@ const App = () => {
   const [selectedUsers, setSelectedUsers] =useState([])
   const [selectedIds, setSelectedIds] =useState([])
   const [posts, setPosts] =useState([])
-
-
+  const [currentFriendId, setCurrentFriendId] =useState(null)
+  const [currentFriends, setCurrentFriends] =useState(null)
  // const [loginEmail, setLoginEmail] = useState('');
  // const [loginPassword, setLoginPassword] = useState('');
   
@@ -63,18 +63,40 @@ const App = () => {
    console.log("////////////////////////////") ;
    console.log("CURRENT_ID", currentId) ;
    console.log("username", username) ;
-
    for(let i=0; i<posts.length; i++){
     console.log("* ", posts[i]);
     console.log("* id ", posts[i].id);
     console.log("* id ", posts[i].data.title);
   //  console.log("** ", JSON.stringify(posts[i]));
    }
-
    console.log("////////////////////////////") ;
    }
 
+   const fetchPostData= async () => {
+  try {
+     if(auth){
+
+      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getPosts?userId=${currentId}`;
+        const fetchedPosts = await axios.get(getUrl)
+
+     console.log("fetchPostData 11111111111:", fetchedPosts.data.posts);
+  //   console.log("POSTS POSTS POSTS2222:", fetchedPosts.data.posts);
+       console.log(" fetchedPosts2  5.:", fetchedPosts2);
+       const fetchedPosts2 = fetchedPosts.data.posts
+       setPosts(fetchedPosts2)
+ //   console.log("POSTS POSTS POSTS2:", posts);
+    await getFriends();
+
+     }
+    }
+    catch (error) {
+        const serverError = error.response ? error.response.data.error : error.message;
+        updateStatus(`Failed to fetch users: ${serverError}`, true);
+      }
+  }
+
   useEffect(() => {
+    console.log("---------- defualt useEffect")
     try {
       if (firebaseConfig.projectId === "your-project-id") {
         updateStatus("Warning: Please replace 'your-project-id' with your actual Firebase project ID in firebaseConfig.", true);
@@ -104,6 +126,7 @@ const App = () => {
     if (!auth) return; // Ensure auth object is initialized
     
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("user 22222.: ", user)
       setCurrentUser(user);
       if (user) {
         updateStatus(`Logged in as: ${user.email} (UID: ${user.uid})`);
@@ -112,7 +135,7 @@ const App = () => {
       }
     });
     return () => unsubscribe(); // Cleanup the listener on unmount
-   }, [auth]);
+   }, [auth,loginTrigger]);
 
 /////
   // Effect to listen for authentication state changes
@@ -123,9 +146,18 @@ console.log("USERNAME CHANGED!!!!!!!!!!!!: ||| ", username," |||")
 )*/
 
 useEffect(() => {
-console.log("IDDDDDDD |||", currentId,"|||")
+  console.log("------------- currentID useEffect")
+//console.log("IDDDDDDD |||", currentId,"|||")
+ fetchPostData();
 }, [currentId]
 )
+/*
+useEffect(() => { CAUSES LOOP
+  console.log("------------- posts useEffect")
+console.log("CURRENT POSTS: ", posts )
+ fetchPostData();
+}, [posts]
+)*/
 
   useEffect(  () => {
     console.log("------------- currentUser useEFFECT")
@@ -133,12 +165,37 @@ console.log("IDDDDDDD |||", currentId,"|||")
     fetchUserData(); 
    }, [currentUser]);
 
+
+
+const getUserById = async () => {
+  try {
+     if(auth){
+    //   console.log("USERNAME: ", username)
+      let tempUsername=username
+      if(username ==''){
+        console.log("USERNAME UNDEFINED!")
+      }
+      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getSingleUser?username=${tempUsername}`;
+        const getResponse = await axios.get(getUrl)
+        const userId = getResponse.data.user.id;
+     //   console.log("userId rztrzhrthztzguzrtzrtzertz:", userId);
+      console.log("userId 3. : ",userId )
+       setCurrentId(userId)
+     }
+    }
+    catch (error) {
+        const serverError = error.response ? error.response.data.error : error.message;
+        updateStatus(`Failed to fetch users: ${serverError}`, true);
+      }
+}
+
 const fetchUserData = async () => {
   try {
      if(auth){
       const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getUsers`;
         const getResponse = await axios.get(getUrl)
     const fetchedUsers = getResponse.data.users;
+    console.log("fetchedUsers 4. : ",fetchedUsers )
     setAuthUsers(fetchedUsers)
 
      }
@@ -149,42 +206,36 @@ const fetchUserData = async () => {
       }
 }
 
-const getUserById = async () => {
-  try {
-     if(auth){
-       console.log("USERNAME: ", username)
-
-      let tempUsername=username
-      if(username ==''){
-        console.log("USERNAME UNDEFINED!")
-      }
-      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getSingleUser?username=${tempUsername}`;
-        const getResponse = await axios.get(getUrl)
-        const userId = getResponse.data.user.id;
-        console.log("userId  rztrzhrthztzguzrtzrtzertz:", userId);
-       setCurrentId(userId)
-     }
-    }
-    catch (error) {
-        const serverError = error.response ? error.response.data.error : error.message;
-        updateStatus(`Failed to fetch users: ${serverError}`, true);
-      }
-}
    //}, [auth, updateStatus]); 
 
   // The URL for your serverless functions
-   const   fetchPostData= async () => {
+
+useEffect(() => {
+  console.log("----------- currentFriendID useEffect")
+ fetchFriendPostData();
+}, [currentFriendId]
+)
+  
+   const  fetchFriendPostData= async () => {
   try {
      if(auth){
-      console.log("oooooooooooooooooooooooooooooo FETCHING POST DATA! "+ currentId)
-      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getPosts?userId=${currentId}`;
+   //   console.log("oooooooooooooooooooooooooooooo FETCHING POST DATA! "+ currentFriendId)
+      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getPosts?userId=${currentFriendId}`;
         const fetchedPosts = await axios.get(getUrl)
-
-     console.log("POSTS POSTS POSTS:", fetchedPosts);
-     console.log("POSTS POSTS POSTS2222:", fetchedPosts.data.posts);
+    // console.log("FRIENDDDDD POST:", fetchedPosts.data.posts);
+       
        const fetchedPosts2 = fetchedPosts.data.posts
-       setPosts(fetchedPosts2)
-    console.log("POSTS POSTS POSTS2:", posts);
+
+    if(fetchedPosts2.length<1){
+      console.log("NO NO NO friend posts")
+     // return
+    }
+      else {
+      console.log("fetchPostData 222222222:", fetchedPosts2);
+       setPosts([...posts,...fetchedPosts2])
+   // console.log("FRIENDDDDD POST AFTER:", posts);
+
+    }
      }
     }
     catch (error) {
@@ -192,6 +243,29 @@ const getUserById = async () => {
         updateStatus(`Failed to fetch users: ${serverError}`, true);
       }
   }
+
+  const getFriends= async ()=>{
+  try {
+      console.log("______________________ FETCHING FRIEND DATA _______________ "+ currentId)
+      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getFriends?userId=${currentId}`;
+        const fetchedFriends = await axios.get(getUrl)
+       // console.log("fetchedFriends RESPONSE: ", fetchedFriends)
+      //  console.log("fetchedFriends RESPONSE: ", fetchedFriends.data.friends)
+       const fetchedFriends2 =  fetchedFriends.data.friends
+
+        for (let i =0; i<fetchedFriends2.length;i++){
+          
+         // console.log( ",,,,, ", fetchedFriends2[i])
+          setCurrentFriendId(fetchedFriends2[i])
+          await fetchFriendPostData()
+        }
+    }
+    catch (error) {
+        const serverError = error.response ? error.response.data.error : error.message;
+        updateStatus(`Failed to fetch friends: ${serverError}`, true);
+      }
+  }
+
   // Event handlers for UI interactions
   const handleRegister = async () => {
     if (!username || !email || !password) {
@@ -247,11 +321,11 @@ const handleLogin = async () => {
     }
     setIsLoading(true);
     try {
+       console.log("POSTS 1.: ", posts)
+        setPosts([])
         await signInWithEmailAndPassword(auth, email, password);
-        updateStatus("Logged in successfully!");
-      //  await get();
-        //await getUserById();
-        console.log("CURRENTID: ", currentId)
+      //  setLoginTrigger(!loginTrigger)
+
          await fetchPostData();
         // The onAuthStateChanged listener will handle setting the currentUser state.
 
@@ -314,7 +388,13 @@ const handleLogin = async () => {
         updateStatus(`////////////////////////////: ${uploadResponse.data}`);
         updateStatus(`////////////////////////////:`, JSON.stringify(uploadResponse.data));
         uploadedImageUrl = uploadResponse.data.url;
-        updateStatus(`Image uploaded successfully. URL: ${uploadedImageUrl}`);
+        updateStatus(`Image uploaded successfully1. URL: ${uploadedImageUrl}`);
+
+        const uploadedImageUrl2 = uploadedImageUrl.replace("https://storage.googleapis.com", "http://127.0.0.1:9199");
+        uploadedImageUrl=uploadedImageUrl2
+
+        //    const functionsUrl = "http://127.0.0.1:5001";
+        updateStatus(`Image uploaded successfully2. URL: ${uploadedImageUrl}`);
       }
       updateStatus("Fetching ID token and calling the `addPost` function...");
       // IMPORTANT: Replace with your function URL
@@ -324,14 +404,14 @@ const handleLogin = async () => {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
-      console.log("D")
+      //console.log("D")
       const response = await axios.post(addPostUrl,{
         title:postTitle,
         content:postContent,
         imageUrl: uploadedImageUrl
         }, {headers:customHeader });
    //   console.log("MMMMMMMMMMMM: ", JSON.stringify(response))
-      console.log("MMMMMMMMMMMM: ", JSON.stringify(response.data.fullPost))
+    //  console.log("MMMMMMMMMMMM: ", JSON.stringify(response.data.fullPost))
 
        setPosts([...posts, response.data.fullPost])
 

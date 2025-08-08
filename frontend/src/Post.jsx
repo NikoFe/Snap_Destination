@@ -2,7 +2,9 @@ import React from 'react'
 import { useState, useEffect, createContext, useContext } from 'react';
 
 const Post = ({post/*content, createdAt, imageUrl,title, userId */}) => {
-
+const functionsUrl = "http://127.0.0.1:5001";
+  
+/*
   useEffect(() => {
     try {
     console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
@@ -14,19 +16,19 @@ const Post = ({post/*content, createdAt, imageUrl,title, userId */}) => {
     } catch (error) {
       console.log(`POST ERROR: ${error.message}`);
     }
-  }, []);
-
+  }, []);*/
+  
+// console.log("_:::::::::::::::::::::::::: ",post.data.createdAt  )
   const formattedDate = post.data.createdAt 
     ? new Date(post.data.createdAt._seconds * 1000).toLocaleString() 
     : 'N/A';
-
-
   return (
     <div
     className="post"
     > 
-    <p>createdAt:  {formattedDate}</p>
-    <p>imageUrl: {post.data.imageUrl}</p>
+   <p>createdAt:  {formattedDate}</p>
+    <img src={post.data.imageUrl} alt="ERROR LOADING"  className="post-image"></img>
+    {/*<p>imageUrl: {post.data.imageUrl}</p> */}
     <p>title: {post.data.title}</p>
     <p>userId: {post.data.userId}</p>
     <p>content: {post.data.content}</p>

@@ -47,3 +47,9 @@
   border-style: solid;
   padding:5px;
 }
+
+.post-image{
+max-width: 600px;
+max-height: 500px;
+
+}
