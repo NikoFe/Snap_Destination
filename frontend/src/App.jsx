@@ -98,8 +98,21 @@ const App = () => {
     }
   }, []);
 
-  
-
+  // Effect to listen for authentication state changes
+  useEffect(() => {
+    console.log("------------- AUTH useEFFECT")
+    if (!auth) return; // Ensure auth object is initialized
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      if (user) {
+        updateStatus(`Logged in as: ${user.email} (UID: ${user.uid})`);
+      } else {
+        updateStatus("Not logged in.");
+      }
+    });
+    return () => unsubscribe(); // Cleanup the listener on unmount
+   }, [auth,loginTrigger]);
 
 /////
   // Effect to listen for authentication state changes
@@ -111,10 +124,12 @@ console.log("USERNAME CHANGED!!!!!!!!!!!!: ||| ", username," |||")
 
 useEffect(() => {
 console.log("IDDDDDDD |||", currentId,"|||")
+ fetchPostData();
 }, [currentId]
 )
 
   useEffect(  () => {
+    console.log("------------- currentUser useEFFECT")
     getUserById();
     fetchUserData(); 
    }, [currentUser]);
@@ -156,21 +171,6 @@ const getUserById = async () => {
         updateStatus(`Failed to fetch users: ${serverError}`, true);
       }
 }
-
-  // Effect to listen for authentication state changes
-  useEffect(() => {
-    if (!auth) return; // Ensure auth object is initialized
-    
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      if (user) {
-        updateStatus(`Logged in as: ${user.email} (UID: ${user.uid})`);
-      } else {
-        updateStatus("Not logged in.");
-      }
-    });
-    return () => unsubscribe(); // Cleanup the listener on unmount
-   }, [auth]);
    //}, [auth, updateStatus]); 
 
   // The URL for your serverless functions
@@ -249,11 +249,12 @@ const handleLogin = async () => {
     setIsLoading(true);
     try {
         await signInWithEmailAndPassword(auth, email, password);
+        setLoginTrigger(!loginTrigger)
         updateStatus("Logged in successfully!");
       //  await get();
-        await getUserById();
+        //await getUserById();
         console.log("CURRENTID: ", currentId)
-        await fetchPostData();
+         await fetchPostData();
         // The onAuthStateChanged listener will handle setting the currentUser state.
 
     } catch (error) {
@@ -311,6 +312,9 @@ const handleLogin = async () => {
           },
         });
         updateStatus(`////////////////////////////: ${uploadResponse}`);
+        updateStatus(`////////////////////////////:`, JSON.stringify(uploadResponse));
+        updateStatus(`////////////////////////////: ${uploadResponse.data}`);
+        updateStatus(`////////////////////////////:`, JSON.stringify(uploadResponse.data));
         uploadedImageUrl = uploadResponse.data.url;
         updateStatus(`Image uploaded successfully. URL: ${uploadedImageUrl}`);
       }
@@ -328,8 +332,11 @@ const handleLogin = async () => {
         content:postContent,
         imageUrl: uploadedImageUrl
         }, {headers:customHeader });
+   //   console.log("MMMMMMMMMMMM: ", JSON.stringify(response))
+      console.log("MMMMMMMMMMMM: ", JSON.stringify(response.data.fullPost))
 
-      console.log("MMMMMMMMMMMM: ", JSON.stringify(response.data))
+       setPosts([...posts, response.data.fullPost])
+
       if (!response.ok) {
         throw new Error(data.error || 'Something went wrong');
       }

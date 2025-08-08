@@ -220,15 +220,24 @@ exports.addPost = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    const postRef = await getFirestore().collection("posts").add({
+    const newPostData = {
       userId: userId,
       title: title,
       content: content,
-      imageUrl: imageUrl || null, 
+      imageUrl: imageUrl || null,
       createdAt: new Date(),
-    });
+    };
+
+
+    const postRef = await getFirestore().collection("posts").add(newPostData);
+    const fullPost = {
+      id: postRef.id,
+      data: newPostData,
+    };
+
+
     
-    res.status(201).json({ result: `Post added successfully with ID: ${postRef.id}` });
+    res.status(201).json({fullPost});
   } catch (error) {
     // If the token is invalid or any other error occurs, return a 401
     functions.logger.error(`Error verifying token or adding post:`, error);

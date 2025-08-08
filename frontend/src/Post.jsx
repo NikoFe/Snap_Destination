@@ -3,8 +3,6 @@ import { useState, useEffect, createContext, useContext } from 'react';
 
 const Post = ({post/*content, createdAt, imageUrl,title, userId */}) => {
 
-
-
   useEffect(() => {
     try {
     console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
@@ -31,6 +29,7 @@ const Post = ({post/*content, createdAt, imageUrl,title, userId */}) => {
     <p>imageUrl: {post.data.imageUrl}</p>
     <p>title: {post.data.title}</p>
     <p>userId: {post.data.userId}</p>
+    <p>content: {post.data.content}</p>
     
     </div>
   )

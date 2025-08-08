@@ -4,6 +4,10 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, on
 import axios from "axios";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+import UserSelect from './UserSelect';
+import Post from './Post';
+import "./App.css";
+
 // Create an Authentication Context to share auth state across components
 const AuthContext = createContext(null);
 
@@ -25,6 +29,7 @@ const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [currentId, setCurrentId] =useState(null)
   const [friendList, setFriendList] = useState('');
   const [password, setPassword] = useState('');
   const [postTitle, setPostTitle] = useState('');
@@ -34,18 +39,40 @@ const App = () => {
   const [status, setStatus] = useState({ message: 'Not logged in.', isError: false });
   const [isLoading, setIsLoading] = useState(false);
   const [loginTrigger, setLoginTrigger] = useState(false);
-  
+  const [authUsers, setAuthUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] =useState([])
+  const [selectedIds, setSelectedIds] =useState([])
+  const [posts, setPosts] =useState([])
+
+
+ // const [loginEmail, setLoginEmail] = useState('');
+ // const [loginPassword, setLoginPassword] = useState('');
   
   // Helper function to update the status text
   const updateStatus = (message, isError = false) => {
     setStatus({ message, isError });
     console.log(message);
   };
-  
+
   // Initialize Firebase and connect to emulators once
   const [app, setApp] = useState(null);
   const [auth, setAuth] = useState(null);
   const [storage, setStorage] = useState(null);
+
+   const debugPrint = async () => {
+   console.log("////////////////////////////") ;
+   console.log("CURRENT_ID", currentId) ;
+   console.log("username", username) ;
+
+   for(let i=0; i<posts.length; i++){
+    console.log("* ", posts[i]);
+    console.log("* id ", posts[i].id);
+    console.log("* id ", posts[i].data.title);
+  //  console.log("** ", JSON.stringify(posts[i]));
+   }
+
+   console.log("////////////////////////////") ;
+   }
 
   useEffect(() => {
     try {
@@ -73,6 +100,7 @@ const App = () => {
 
   // Effect to listen for authentication state changes
   useEffect(() => {
+    console.log("------------- AUTH useEFFECT")
     if (!auth) return; // Ensure auth object is initialized
     
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -85,48 +113,88 @@ const App = () => {
     });
     return () => unsubscribe(); // Cleanup the listener on unmount
    }, [auth]);
-   //}, [auth, updateStatus]); 
-////////////////////////
 
-  useEffect(() => {
-    const callServerLogin = async () => {
-      if (!currentUser) {
-        // If no user is logged in, do nothing.
-        return;
-      }
-      try {
-        const token = await currentUser.getIdToken();
-        updateStatus("Fetching ID token and calling the `login` server function...");
-        
-        const loginUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/login`; 
-        
-        const response = await axios.get(loginUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        updateStatus(`Server Login Function Response:\n${JSON.stringify(response.data, null, 2)}`);
-      } catch (error) {
+/////
+  // Effect to listen for authentication state changes
+/*
+useEffect(() => {
+console.log("USERNAME CHANGED!!!!!!!!!!!!: ||| ", username," |||")
+}, [username]
+)*/
+
+useEffect(() => {
+console.log("IDDDDDDD |||", currentId,"|||")
+}, [currentId]
+)
+
+  useEffect(  () => {
+    console.log("------------- currentUser useEFFECT")
+    getUserById();
+    fetchUserData(); 
+   }, [currentUser]);
+
+const fetchUserData = async () => {
+  try {
+     if(auth){
+      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getUsers`;
+        const getResponse = await axios.get(getUrl)
+    const fetchedUsers = getResponse.data.users;
+    setAuthUsers(fetchedUsers)
+
+     }
+    }
+    catch (error) {
         const serverError = error.response ? error.response.data.error : error.message;
-        updateStatus(`Failed to call serverless 'login' function: ${serverError}`, true);
+        updateStatus(`Failed to fetch users: ${serverError}`, true);
       }
-    };
+}
 
-    // Call the server login function only if a user is logged in
-    callServerLogin();
-  }, [currentUser, functionsUrl, firebaseConfig.projectId]); // Dependencies for useEffect
-///////////////////////////
-  useEffect(() => {
-  }, [loginTrigger]);
+const getUserById = async () => {
+  try {
+     if(auth){
+       console.log("USERNAME: ", username)
+
+      let tempUsername=username
+      if(username ==''){
+        console.log("USERNAME UNDEFINED!")
+      }
+      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getSingleUser?username=${tempUsername}`;
+        const getResponse = await axios.get(getUrl)
+        const userId = getResponse.data.user.id;
+        console.log("userId  rztrzhrthztzguzrtzrtzertz:", userId);
+       setCurrentId(userId)
+     }
+    }
+    catch (error) {
+        const serverError = error.response ? error.response.data.error : error.message;
+        updateStatus(`Failed to fetch users: ${serverError}`, true);
+      }
+}
+   //}, [auth, updateStatus]); 
 
   // The URL for your serverless functions
+   const   fetchPostData= async () => {
+  try {
+     if(auth){
+      console.log("oooooooooooooooooooooooooooooo FETCHING POST DATA! "+ currentId)
+      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getPosts?userId=${currentId}`;
+        const fetchedPosts = await axios.get(getUrl)
 
-
+     console.log("POSTS POSTS POSTS:", fetchedPosts);
+     console.log("POSTS POSTS POSTS2222:", fetchedPosts.data.posts);
+       const fetchedPosts2 = fetchedPosts.data.posts
+       setPosts(fetchedPosts2)
+    console.log("POSTS POSTS POSTS2:", posts);
+     }
+    }
+    catch (error) {
+        const serverError = error.response ? error.response.data.error : error.message;
+        updateStatus(`Failed to fetch users: ${serverError}`, true);
+      }
+  }
   // Event handlers for UI interactions
   const handleRegister = async () => {
-    if (!email || !password) {
+    if (!username || !email || !password) {
       updateStatus("Please enter an email and password to register.", true);
       return;
     }
@@ -135,64 +203,64 @@ const App = () => {
         return;
     }
     try {
- 
-       //await createUserWithEmailAndPassword(auth, email, password);
-      const friends = friendList.split(',');
-      console.log("FRIENDS:",friends )
+      const friendsToAdd = [];
+      
+      // Loop through all users and find the ones that are selected
+      for (const user of authUsers) {
+        if (selectedUsers.includes(user.data.displayName)) {
+          friendsToAdd.push(user.id);
+        }
+      }
+      
+      // Now you can use the friendsToAdd array directly
+      console.log("FRIENDS:", friendsToAdd);
       const uploadUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/register`;
-          const registerResponse = await axios.post(uploadUrl, {
-            email: email,
-            password: password,
-            name: username,
-            friends: friends
-        }, 
-        );
+      const registerResponse = await axios.post(uploadUrl, {
+        email: email,
+        password: password,
+        name: username,
+        friends: friendsToAdd, // Pass the newly created array here
+      });
+
+      // You can optionally update the state after the successful API call
+      setSelectedIds(friendsToAdd);
+      
       updateStatus(`Registration successful. Response: ${JSON.stringify(registerResponse.data)}`);
-      // After successful registration, sign the user in so the onAuthStateChanged listener fires
       await signInWithEmailAndPassword(auth, email, password);
+
+      await fetchPostData();
+
       // onAuthStateChanged listener will handle UI updates
     } catch (error) {
       updateStatus(`Registration failed: ${error.message}`, true);
     }
   };
-  const handleLogin = async () => {
-    try {
+
+const handleLogin = async () => {
     if (!email || !password) {
-      updateStatus("Please enter an email and password to log in.", true);
-      return;
+        updateStatus("Please enter an email and password to log in.", true);
+        return;
     }
     if (!auth) {
         updateStatus("Firebase Auth is not initialized.", true);
         return;
     }
-     updateStatus("Signing in with Firebase Authentication...");
-     
-     await signInWithEmailAndPassword(auth, email, password);
-      if (!currentUser) {
-        updateStatus("You must be logged in to call this function.", true);
-        return;
-      }
-      updateStatus("Signing in with Firebase Authentication...");
-      const token = await currentUser.getIdToken();
-      updateStatus("Fetching ID token and calling the `login` function...");
-      const loginUrl = `${functionsUrl}/snapdestination-e76e0/us-central1/login`; 
-      
-      const response = await fetch(loginUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-       updateStatus("response of login: ", JSON.stringify(response) );
+    setIsLoading(true);
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        updateStatus("Logged in successfully!");
+      //  await get();
+        //await getUserById();
+        console.log("CURRENTID: ", currentId)
+         await fetchPostData();
+        // The onAuthStateChanged listener will handle setting the currentUser state.
 
-      //////////////////////////////////////////
-      
-      // onAuthStateChanged listener will handle UI updates
     } catch (error) {
-      updateStatus(`Login failed: ${error.message}`, true);
+        updateStatus(`Login failed: ${error.message}`, true);
+    } finally {
+        setIsLoading(false);
     }
-  };
+};
   // Handler for image file selection
   const handleImageChange = (e) => {
     if (e.target.files[0]) {
@@ -241,6 +309,10 @@ const App = () => {
             'Content-Type': 'application/json', // Send as JSON
           },
         });
+        updateStatus(`////////////////////////////: ${uploadResponse}`);
+        updateStatus(`////////////////////////////:`, JSON.stringify(uploadResponse));
+        updateStatus(`////////////////////////////: ${uploadResponse.data}`);
+        updateStatus(`////////////////////////////:`, JSON.stringify(uploadResponse.data));
         uploadedImageUrl = uploadResponse.data.url;
         updateStatus(`Image uploaded successfully. URL: ${uploadedImageUrl}`);
       }
@@ -258,8 +330,11 @@ const App = () => {
         content:postContent,
         imageUrl: uploadedImageUrl
         }, {headers:customHeader });
+   //   console.log("MMMMMMMMMMMM: ", JSON.stringify(response))
+      console.log("MMMMMMMMMMMM: ", JSON.stringify(response.data.fullPost))
 
-      console.log("MMMMMMMMMMMM: ", JSON.stringify(response.data))
+       setPosts([...posts, response.data.fullPost])
+
       if (!response.ok) {
         throw new Error(data.error || 'Something went wrong');
       }
@@ -282,6 +357,13 @@ const App = () => {
         {/* Authentication Section */}
         <div className={currentUser ? 'hidden' : 'space-y-4'}>
           {/*<h2 className="text-xl font-semibold text-gray-700">Login</h2>*/}
+          <UserSelect
+            users={authUsers}
+            selectedUsers={selectedUsers}
+            setSelectedUsers={setSelectedUsers}
+          >
+          </UserSelect>
+
           <input
             id="username-input"
             type="text"
@@ -334,13 +416,14 @@ const App = () => {
         {/* Authenticated Actions Section */}
         <div className={currentUser ? 'mt-6 space-y-4' : 'hidden'}>
           <h2 className="text-xl font-semibold text-gray-700">Authenticated Actions</h2>
+          {/*
           <button
            // onClick={handleCallLoginFunction}
             onClick={handleLogin}
             className="w-full bg-purple-600 text-white font-medium py-2 px-4 rounded-md hover:bg-purple-700 transition duration-300 ease-in-out"
           >
             Call Server `login` Function
-          </button>
+          </button>*/}
           <div className="mt-4">
             <input
               id="postTitle"
@@ -386,10 +469,16 @@ const App = () => {
             </button>
           </div>
           <button
-            onClick={() => signOut(auth)}
-            className="w-full mt-4 bg-red-600 text-white font-medium py-2 px-4 rounded-md hover:bg-red-700 transition duration-300 ease-in-out"
+           onClick={() => signOut(auth)}
+           className="w-full mt-4 bg-red-600 text-white font-medium py-2 px-4 rounded-md hover:bg-red-700 transition duration-300 ease-in-out"
           >
             Log Out
+          </button>
+          <button
+            onClick={() => {debugPrint()}}
+            className="w-full mt-4 bg-red-600 text-white font-medium py-2 px-4 rounded-md hover:bg-red-700 transition duration-300 ease-in-out"
+          >
+             TEST123
           </button>
         </div>
         
@@ -403,6 +492,23 @@ const App = () => {
             {status.message}
           </pre>
         </div>
+          {
+            posts.map((post, index) => (      
+
+            <Post
+            post={post}
+     
+          /*  content={post.data.content}
+            createdAt={post.data.createdAt}
+             imageUrl={post.data.imageUrl}
+             title={post.data.title}
+             userId={post.data.userId}*/
+            
+            ></Post>
+            ))
+            }
+
+
       </div>
     </div>
   );
