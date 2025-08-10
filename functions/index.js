@@ -124,17 +124,10 @@ exports.getPosts = onRequest(async (req, res) => {
 
       const posts = [];
       allPosts2.forEach((doc) => {
-        // Get the data and the document ID
         posts.push({
           
           id: doc.id,
           data: doc.data(),
-          /*
-          created_at: doc   ,
-          imageUrl:    ,
-          title: doc.data(),
-          userId:*/
-
         });
        console.log(`KKKKKKKKKKKKKKKKKKKKKKKKKK: ${doc.id}`)//why does this not print?
        console.log(`LLLLLLLLLLLLLLLLLLLLL: ${doc.data}`)//why does this not print?

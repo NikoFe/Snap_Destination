@@ -1,0 +1,35 @@
+1. get friends from friend selection
+
+      const friendsToAdd = [];
+      
+      // Loop through all users and find the ones that are selected
+      
+      for (const user of authUsers) {
+        if (selectedUsers.includes(user.data.displayName)) {
+          friendsToAdd.push(user.id);
+        }
+      }
+
+2.
+  const uploadUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/register`;
+    const registerResponse = await axios.post(uploadUrl, {
+    email: email,
+    password: password,
+    name: username,
+    friends: friendsToAdd, // Pass the newly created array here
+    });
+
+3.
+ signInWithEmailAndPassword  useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+
+///////////////Login
+1.  setPosts([])
+    await signInWithEmailAndPassword(auth, email, password);
+       
+2.    await fetchPostData();
+
+3.      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getPosts?userId=${currentId}`;
+        const fetchedPosts = await axios.get(getUrl)
+

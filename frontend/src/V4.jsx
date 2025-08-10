@@ -60,27 +60,9 @@ const App = () => {
 
   const [loginTrigger, setLoginTrigger] = useState(false);
   const [authTrigger, setAuthTrigger] = useState(false);
-  const [friendPosts, setFriendPosts] = useState([]);
-
 
   const updatePosts = async (newPosts) => {
       setPosts(newPosts);
-  };
-
-
-  const debugPrint = async () => {
-    console.log("authUsers", authUsers);
-    console.log("CURRENT_ID", currentId);
-    console.log("username", username);
-    console.log("POSTS: ", posts);
-    console.log("FRIEND POSTS: ", friendPosts);
-    /*
-    for (let i = 0; i < posts.length; i++) {
-      console.log("* ", posts[i]);
-      console.log("* id ", posts[i].id);
-      console.log("* id ", posts[i].data.title);
-      //  console.log("** ", JSON.stringify(posts[i]));
-    }*/
   };
 
 
@@ -127,7 +109,7 @@ const App = () => {
 
         // Cleanup function for the listener
         return () => unsubscribe(); 
-      // fetchUserData();
+       fetchUserData();
     } catch (error) {
       updateStatus(`Firebase Initialization Failed: ${error.message}`, true);
     }
@@ -162,6 +144,7 @@ const App = () => {
     console.log("------------- currentId useEFFECT: ", currentId)
     fetchPostData();
     fetchUserData();
+
    }, [currentId]);
   useEffect(  () => {
     console.log("------------- currentId username: ", username)
@@ -172,7 +155,17 @@ const App = () => {
     console.log(message);
   };
 
-
+  const debugPrint = async () => {
+    console.log("authUsers", authUsers);
+    console.log("CURRENT_ID", currentId);
+    console.log("username", username);
+    for (let i = 0; i < posts.length; i++) {
+      console.log("* ", posts[i]);
+      console.log("* id ", posts[i].id);
+      console.log("* id ", posts[i].data.title);
+      //  console.log("** ", JSON.stringify(posts[i]));
+    }
+  };
 
   const fetchPostData = async () => {
     try {
@@ -191,58 +184,6 @@ const App = () => {
       updateStatus(`Failed to fetch users: ${serverError}`, true);
     }
   };
-  const getFriends = async () => {
-    try {
-      console.log(
-        "______________________ FETCHING FRIEND DATA _______________ " +
-          currentId
-      );
-      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getFriends?userId=${currentId}`;
-      const fetchedFriends = await axios.get(getUrl);
-      const fetchedFriends2 = fetchedFriends.data.friends;
-
-      console.log("222222222222: ",fetchedFriends2.length)
-       for (let i = 0; i < fetchedFriends2.length; i++) {
-        console.log("333333333333333: ",fetchedFriends2[i] )
-        await fetchFriendPostData(fetchedFriends2[i]);
-      }
-    } catch (error) {
-      const serverError = error.response
-        ? error.response.data.error
-        : error.message;
-      updateStatus(`Failed to fetch friends: ${serverError}`, true);
-    }
-  };
-    const fetchFriendPostData = async (friendId) => {
-    try {
-      if (auth) {
-       console.log("oooooooooooooooooooooooooooooo friendId: "+ friendId)
-        
-        const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getPosts?userId=${friendId}`;
-        const fetchedPosts = await axios.get(getUrl);
-
-
-        const fetchedPosts2 = fetchedPosts.data.posts;
-         console.log("44444444444444444444:", fetchedPosts2);
-        if (fetchedPosts2.length < 1) {
-          console.log("NO NO NO friend posts");
-          // return
-        } else {
-
-        setFriendPosts(fetchedPosts2);
-
-        //  setPosts([...posts, ...fetchedPosts2]);
-        setPosts(prevPosts => [...prevPosts, ...fetchedPosts2]);
-        }
-      }
-    } catch (error) {
-      const serverError = error.response
-        ? error.response.data.error
-        : error.message; 
-      updateStatus(`Failed to fetch users: ${serverError}`, true);
-    }
-  };
-
 
   const getUserById = async () => {
     try {
@@ -285,8 +226,56 @@ const App = () => {
   };
   //}, [auth, updateStatus]);
   // The URL for your serverless functions
+  const fetchFriendPostData = async (friendId) => {
+    try {
+      if (auth) {
+       console.log("oooooooooooooooooooooooooooooo friendId: "+ friendId)
+        
+        const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getPosts?userId=${friendId}`;
+        const fetchedPosts = await axios.get(getUrl);
+        // console.log("FRIENDDDDD POST:", fetchedPosts.data.posts);
 
+        const fetchedPosts2 = fetchedPosts.data.posts;
 
+        if (fetchedPosts2.length < 1) {
+          console.log("NO NO NO friend posts");
+          // return
+        } else {
+          console.log("fetchPostData 222222222:", fetchedPosts2);
+          setPosts([...posts, ...fetchedPosts2]);
+          // console.log("FRIENDDDDD POST AFTER:", posts);
+        }
+      }
+    } catch (error) {
+      const serverError = error.response
+        ? error.response.data.error
+        : error.message; 
+      updateStatus(`Failed to fetch users: ${serverError}`, true);
+    }
+  };
+
+  const getFriends = async () => {
+    try {
+      console.log(
+        "______________________ FETCHING FRIEND DATA _______________ " +
+          currentId
+      );
+      const getUrl = `${functionsUrl}/${firebaseConfig.projectId}/us-central1/getFriends?userId=${currentId}`;
+      const fetchedFriends = await axios.get(getUrl);
+      const fetchedFriends2 = fetchedFriends.data.friends;
+
+      console.log("222222222222: ",fetchedFriends2.length)
+       for (let i = 0; i < fetchedFriends2.length; i++) {
+        console.log("333333333333333: ",fetchedFriends2[i] )
+        await fetchFriendPostData(fetchedFriends2[i]);
+      }
+    } catch (error) {
+      const serverError = error.response
+        ? error.response.data.error
+        : error.message;
+      updateStatus(`Failed to fetch friends: ${serverError}`, true);
+    }
+  };
 
   // Event handlers for UI interactions
   const handleRegister = async () => {
